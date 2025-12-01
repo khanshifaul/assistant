@@ -1,0 +1,6 @@
+faster-whisper
+sounddevice
+numpy
+ollama
+rich
+colorama
