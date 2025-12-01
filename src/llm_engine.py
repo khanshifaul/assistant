@@ -38,9 +38,9 @@ class InterviewAssistantSLM:
 
     def generate_answer(self, question, context=""):
         """
-        Generates an answer for the given question using Ollama.
+        Generates an answer for the given question using Ollama (Streaming).
         """
-        prompt = f"""You are an expert interview candidate. Answer the following interview question concisely and professionally.
+        prompt = f"""You are an expert interview candidate. Answer the following interview question concisely (max 2 sentences) and professionally.
 
 Context: {context}
 
@@ -49,8 +49,9 @@ Question: {question}
 Answer:"""
         
         try:
-            response = ollama.generate(model=self.model_name, prompt=prompt)
-            return response['response'].strip()
+            stream = ollama.generate(model=self.model_name, prompt=prompt, stream=True)
+            for chunk in stream:
+                yield chunk['response']
         except Exception as e:
             logging.error(f"Ollama generation failed: {e}")
-            return "Error generating answer. Is Ollama running?"
+            yield "Error generating answer. Is Ollama running?"
