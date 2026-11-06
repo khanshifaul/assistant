@@ -1,5 +1,7 @@
 import ollama
 import logging
+from .model_manager import ModelManager
+from .context_builder import ContextBuilder
 
 class InterviewAssistantSLM:
     def __init__(self, model_name="phi3"):
@@ -39,19 +41,36 @@ class InterviewAssistantSLM:
     def generate_answer(self, question, context=""):
         """
         Generates an answer for the given question using Ollama (Streaming).
+        Uses dynamic context from history if available.
         """
+        # Build dynamic context using embeddings
+        dynamic_context = self.context_builder.build_context(question)
+        full_context = f"{context}\n{dynamic_context}".strip()
+
         prompt = f"""You are an expert interview candidate. Answer the following interview question concisely (max 2 sentences) and professionally.
 
-Context: {context}
+Context: {full_context}
 
 Question: {question}
 
 Answer:"""
-        
+
+        if not self.primary_model:
+            yield "No models available."
+            return
+
         try:
-            stream = ollama.generate(model=self.model_name, prompt=prompt, stream=True)
+            stream = self.model_manager.generate_response(self.primary_model, prompt, stream=True)
             for chunk in stream:
                 yield chunk['response']
         except Exception as e:
             logging.error(f"Ollama generation failed: {e}")
             yield "Error generating answer. Is Ollama running?"
+
+    def switch_model(self, model_name):
+        """Switch to a different model if available."""
+        if model_name in self.available_models:
+            self.primary_model = model_name
+            logging.info(f"Switched to model: {model_name}")
+        else:
+            logging.error(f"Model {model_name} not available.")

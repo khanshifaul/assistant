@@ -4,3 +4,7 @@ numpy
 ollama
 rich
 colorama
+
+faiss-cpu
+chromadb
+scikit-learn
